@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Misinformation Detector</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #container {
+            text-align: center;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            font-weight: 300;  /* Make text thinner */
+            font-style: italic; /* Make text italic */
+        }
+        .input-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        #textInput {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .color-bar {
+            width: 200px;
+            height: 40px;
+            border-radius: 5px;
+            background-color: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .backend-select-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            margin-left: 10px; /* Add space between text input and container */
+        }
+        #backendSelect {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>Medical Misinformation Detector</h1>
+        <div class="input-container">
+            <textarea id="textInput" rows="25" cols="170" placeholder="Enter or copy your text here..."></textarea>
+            <div class="backend-select-container">
+                <div id="colorBar" class="color-bar">Pending...</div>
+                <label for="backendSelect" style="margin-top: auto;">Choose Back-End:</label>
+                <select id="backendSelect">
+                    <option value="gpt4">GPT 4</option>
+                    <option value="mistral">Mistral</option>
+                    <option value="BERT fine-tuned">BERT fine-tuned</option>
+                    <option value="BERT fine-tuned">Own Model</option>>
+                </select>
+            </div>
+        </div>
+        <button onclick="classifyText()">Check</button>
+        <div id="result"></div>
+    </div>
+    <script>
+        async function classifyText() {
+            const text = document.getElementById("textInput").value;
+            const backend = document.getElementById("backendSelect").value;
+            const response = await fetch("/submit", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ user_input: text, backend: backend })
+            });
+            const result = await response.json();
+
+            // Update color bar and display commentary
+            updateColorBar(result.probabilities);
+            displayCommentary(result.commentary);
+        }
+
+        function updateColorBar(probabilities) {
+            const colorBar = document.getElementById("colorBar");
+            const credibility = probabilities.credible;
+            const misleading = probabilities.misleading;
+
+            // Calculate color based on credibility percentage
+            const greenValue = Math.round((credibility / 100) * 255);
+            const redValue = Math.round((misleading / 100) * 255);
+            const color = `rgb(${redValue}, ${greenValue}, 0)`;
+
+            colorBar.style.backgroundColor = color;
+
+            // Determine the bar text based on the decision boundary
+            if (credibility > 50) {
+                colorBar.innerText = `Credible ${credibility}%`;
+            } else {
+                colorBar.innerText = `Misleading ${misleading}%`;
+            }
+        }
+
+        function displayCommentary(commentary) {
+            const resultDiv = document.getElementById("result");
+            resultDiv.innerText = commentary;
+        }
+    </script>
+</body>
+</html>
